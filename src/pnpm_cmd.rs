@@ -266,8 +266,20 @@ fn is_valid_package_name(name: &str) -> bool {
         return false;
     }
 
-    // No path traversal
-    if name.contains("..") {
+    // Allow protocol-prefixed package specs (github:, git+, file:, npm:, etc.)
+    // These are explicit and safe — reject only bare path forms
+    if name.contains(':') {
+        return true;
+    }
+
+    // No path traversal or absolute paths (prevents local filesystem installs)
+    if name.contains("..") || name.starts_with('/') || name.starts_with('.') {
+        return false;
+    }
+
+    // Scoped packages must start with @
+    // Unscoped packages must not contain /
+    if !name.starts_with('@') && name.contains('/') {
         return false;
     }
 
@@ -558,10 +570,31 @@ mod tests {
 
     #[test]
     fn test_package_name_validation() {
+        // Valid names
         assert!(is_valid_package_name("lodash"));
         assert!(is_valid_package_name("@clerk/express"));
+        assert!(is_valid_package_name("lodash.merge"));
+        assert!(is_valid_package_name("react-dom"));
+
+        // Protocol-prefixed specs are allowed (explicit, not bare filesystem paths)
+        assert!(is_valid_package_name("github:user/repo"));
+        assert!(is_valid_package_name("git+https://github.com/user/repo"));
+        assert!(is_valid_package_name("file:./local-package"));
+
+        // Path traversal
         assert!(!is_valid_package_name("../../../etc/passwd"));
         assert!(!is_valid_package_name("lodash; rm -rf /"));
+
+        // Absolute paths (local filesystem installs without explicit protocol)
+        assert!(!is_valid_package_name("/etc/passwd"));
+        assert!(!is_valid_package_name("/absolute/path"));
+
+        // Relative paths (local filesystem installs without explicit protocol)
+        assert!(!is_valid_package_name("./local-package"));
+        assert!(!is_valid_package_name(".hidden"));
+
+        // Slash in unscoped package name
+        assert!(!is_valid_package_name("foo/bar"));
     }
 
     #[test]

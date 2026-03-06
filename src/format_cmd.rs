@@ -74,7 +74,10 @@ pub fn run(args: &[String], verbose: u8) -> Result<()> {
         "prettier" => package_manager_exec("prettier"),
         "black" | "ruff" => Command::new(formatter.as_str()),
         "biome" => package_manager_exec("biome"),
-        _ => Command::new(formatter.as_str()),
+        other => unreachable!(
+            "detect_formatter only returns known formatters, got: {:?}",
+            other
+        ),
     };
 
     // Add formatter-specific flags

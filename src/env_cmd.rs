@@ -144,14 +144,9 @@ fn get_sensitive_patterns() -> HashSet<&'static str> {
 }
 
 fn mask_value(value: &str) -> String {
-    let chars: Vec<char> = value.chars().collect();
-    if chars.len() <= 4 {
-        "****".to_string()
-    } else {
-        let prefix: String = chars[..2].iter().collect();
-        let suffix: String = chars[chars.len() - 2..].iter().collect();
-        format!("{}****{}", prefix, suffix)
-    }
+    let len = value.chars().count();
+    // Show only the length to help identify the variable without leaking content
+    format!("[{} chars hidden]", len)
 }
 
 fn is_lang_var(key: &str) -> bool {
